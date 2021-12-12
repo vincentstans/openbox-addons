@@ -1,0 +1,170 @@
+#### Contents of the preconfiguration file (for bullseye with openbox )
+#### EFI boot installation 12GB disk requires about 3GB complete
+#### boot param: auto=true priority=critical file=preseed.cfg.efi or url=domain.tld/preseed.cfg.efi
+#### Crypt setup password:r00tme123
+#### first login on tty1: user/user123
+#### 
+### Localization
+# Preseeding only locale sets language, country and locale currently set to Dutch / English.
+d-i debian-installer/locale string nl_NL
+d-i debian-installer/language string nl
+d-i debian-installer/country string NL
+d-i debian-installer/locale string nl_NL.UTF-8
+d-i localechooser/supported-locales multiselect nl_NL.UTF-8, en_US.UTF-8
+# keyboard
+d-i keyboard-configuration/xkb-keymap select us
+d-i netcfg/choose_interface select auto
+d-i netcfg/get_hostname string unassigned-hostname
+d-i netcfg/get_domain string unassigned-domain
+# Hostname
+d-i netcfg/hostname string Guest-OS
+d-i netcfg/wireless_wep string
+# network mirror ! seems like it's not copied added at the end !
+d-i mirror/country string Netherlands
+d-i mirror/http/hostname string ftp.nluug.nl
+d-i mirror/http/directory string /debian
+d-i mirror/http/proxy string
+# suite bullseye script also works for buster
+d-i mirror/suite string bullseye
+# root login disabled first user has sudo
+d-i passwd/root-login boolean false
+# First user created 
+# To create a crypted password # $> mkpasswd -m sha-512 [enter]
+d-i passwd/user-fullname string User Name
+d-i passwd/username string user
+d-i passwd/user-password-crypted password $6$gxFZjs0L4Xdz2fv$Vhvc0R4960u6Lfij4Lpp8Q7Y8/jQ5tvv0NlkpzFo99qTZ1Js07Q8yh0R.3AhEHQDCLGyW8sKN2MctAMXQ8NOM1
+d-i passwd/user-default-groups string audio cdrom video adm disk
+d-i clock-setup/utc boolean false
+d-i time/zone string Europe/Amsterdam
+d-i clock-setup/ntp boolean true
+
+### Partitioning
+d-i partman-auto/disk string /dev/sda
+#d-i partman-auto/method string regular
+d-i partman-auto/method string crypto
+d-i partman-lvm/device_remove_lvm boolean true
+d-i partman-md/device_remove_md boolean true
+d-i partman-lvm/confirm boolean true
+d-i partman-lvm/confirm_nooverwrite boolean true
+# set size to max to use everything
+d-i partman-auto-lvm/guided_size string 10 GB
+d-i partman-partitioning/choose_label string gpt
+d-i partman-partitioning/default_label string gpt
+
+# When disk encryption is enabled, skip wiping the partitions beforehand.
+# true takes longer as it whipes the complete disk 
+d-i partman-auto-crypto/erase_disks boolean false
+d-i partman-auto-lvm/new_vg_name string crypt
+d-i partman-auto/choose_recipe select root-encrypted
+# 300mb /boot 1Gb swap encrypted lvm minimal 5GB max 10GB / encrypted lvm. 
+# max total left space set 10000 to -1 and guided_size to max
+d-i partman-auto/expert_recipe string                         \
+      root-encrypted ::                                       \
+               178 10 375 free                                \
+                      $iflabel{ gpt }                         \
+                      $reusemethod{ }                         \
+                      method{ efi }                           \
+                      format{ }                               \
+               .                                              \
+              200 10 300 ext4                                 \
+                      $primary{ } $bootable{ }                \
+                      method{ format } format{ }              \
+                      use_filesystem{ } filesystem{ ext4 }    \
+                      mountpoint{ /boot }                     \
+              .                                               \
+              1000 2000 1000 linux-swap                       \
+                      $lvmok{ } lv_name{ swap }               \
+                      in_vg { crypt }                         \
+                      $primary{ }                             \
+                      method{ swap } format{ }                \
+              .                                               \
+              5000 8000 10000 ext4                            \
+                      $lvmok{ } lv_name{ root }               \
+                      in_vg { crypt }                         \
+                      $primary{ }                             \
+                      method{ format } format{ }              \
+                      use_filesystem{ } filesystem{ ext4 }    \
+                      mountpoint{ / }                         \
+              .
+#              2000 10000 10000000 \
+#                      method { keep } \
+#              .
+# You could uncomment the 3 lines above to have some lvm space to play with
+# This makes partman automatically partition without confirmation.
+d-i partman-crypto/passphrase password r00tme123
+d-i partman-crypto/passphrase-again password r00tme123
+d-i partman-md/confirm boolean true
+d-i partman-partitioning/confirm_write_new_label boolean true
+d-i partman/choose_partition select finish
+d-i partman/confirm boolean true
+d-i partman/confirm_nooverwrite boolean true
+d-i partman-basicfilesystems/no_swap boolean false
+### Apt setup
+# You can choose to install non-free and contrib software.
+d-i apt-setup/non-free boolean true
+d-i apt-setup/contrib boolean true
+### Package selection
+tasksel tasksel/first multiselect standard
+# Individual additional packages to install 
+d-i pkgsel/include thunar
+d-i pkgsel/upgrade select none
+popularity-contest popularity-contest/participate boolean false
+d-i grub-installer/only_debian boolean true
+d-i grub-installer/with_other_os boolean true
+d-i grub-installer/bootdev string /dev/sda
+#d-i debian-installer/add-kernel-opts string net.ifnames=0 biosdevname=0
+d-i finish-install/keep-consoles boolean false
+# Late command building custom script to run on first login on tty1
+d-i preseed/late_command string \
+### some examples 
+#echo "host.or.ip.addr:/srv/nfs/home/ /media/user/backup nfs user,auto 0 0" >> /target/etc/fstab; \
+##in-target mkdir -p /media/user/backup; in-target chown -R 1000:1000 /media/user; \
+echo "#!/bin/bash" > /target/home/user/final.sh; \
+echo "echo " >> /target/home/user/final.sh; \
+# New Password after first login uncomment below
+#echo 'echo "    ##########################################"' >> /target/home/user/final.sh; \
+#echo 'echo "    # Enter a New Password for your Account  #"' >> /target/home/user/final.sh; \
+#echo 'echo "    ##########################################"' >> /target/home/user/final.sh; \
+#echo "read -p '[Y/N] :' newpass" >> /target/home/user/final.sh; \
+#echo "if [[ \$newpass = 'y' ]]; then" >> /target/home/user/final.sh; \
+#echo "echo " >> /target/home/user/final.sh; \
+#echo "passwd" >> /target/home/user/final.sh; \
+#echo "clear" >> /target/home/user/final.sh; \
+#echo "fi" >> /target/home/user/final.sh; \
+echo "echo " >> /target/home/user/final.sh; \
+echo 'echo "    #####################################"' >> /target/home/user/final.sh; \
+echo 'echo "    # Continue Last Installation Steps  #"' >> /target/home/user/final.sh; \
+echo 'echo "    #####################################"' >> /target/home/user/final.sh; \
+echo "echo " >> /target/home/user/final.sh; \
+echo "read -p -n 1 '[Y/N] :' cont" >> /target/home/user/final.sh; \
+echo "if [[ \$cont = 'y' ]]; then" >> /target/home/user/final.sh; \
+sed -i '/^deb cdrom/d' /target/etc/apt/sources.list; \
+echo "deb http://download.opensuse.org/repositories/home:/Head_on_a_Stick:/obmenu-generator/Debian_10/ /" > /target/etc/apt/sources.list.d/obmenu-generator.list; \
+echo "wget -nv https://download.opensuse.org/repositories/home:Head_on_a_Stick:obmenu-generator/Debian_10/Release.key -O Release.key" >> /target/home/user/final.sh; \
+# Set your mirror here 
+echo "deb http://ftp.nluug.nl/debian bullseye main contrib" >> /target/etc/apt/sources.list; \
+echo "sudo apt update && sudo apt upgrade" >> /target/home/user/final.sh; \
+echo "sudo apt install openbox obsession obconf lxpanel lxpolkit xcompmgr lxterminal thunar feh \
+ruby gcc make perl curl unifont libgtk3-perl gmrun alsa-utils alsamixergui polkit diodon geany xarchiver \
+xscreensaver aptitude net-tools lightdm lightdm-gtk-greeter-settings lsb-release inxi xutils xdg-utils \
+rsync wget accountsservice xdg-user-dirs xfce4-notifyd baobab autofs x11-xserver-utils gthumb hexchat cpanminus \
+firefox-esr-l10n-nl linux-headers-\$(uname -r) -y" >> /target/home/user/final.sh; \
+echo "sudo apt-key add - < Release.key" >> /target/home/user/final.sh; \
+echo "rm Release.key" >> /target/home/user/final.sh; \
+#echo "sudo cpan install inc::latest" >> /target/home/user/bin/final.sh; \
+echo "sudo cpanm install Data::Dump" >> /target/home/user/final.sh; \
+echo "sudo cpanm install Linux::DesktopFiles" >> /target/home/user/final.sh; \
+echo "sudo apt update" >> /target/home/user/final.sh; \
+echo "sudo apt install obmenu-generator" >> /target/home/user/final.sh; \
+echo "read -p 'Finished: Press any key to continue'  any" >> /target/home/user/final.sh; \
+echo "sudo shutdown -r 1"; \
+echo "rm -f \$0 .bash_profile" >> /target/home/user/final.sh; \
+echo "else" >> /target/home/user/final.sh; \
+echo 'echo " DIY ! "' >> /target/home/user/final.sh; \
+echo "fi" >> /target/home/user/final.sh; \
+echo "if [[ -z \$DISPLAY ]] && [[ \$(tty) = /dev/tty1 ]]; then /home/user/final.sh; fi" > /target/home/user/.bash_profile; \
+chmod +x /target/home/user/final.sh; \
+chown -R 1000:1000 /target/home/user;
+
+# Avoid that last message about the install being complete.
+d-i finish-install/reboot_in_progress note
