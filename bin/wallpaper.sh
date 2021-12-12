@@ -1,12 +1,15 @@
 #!/bin/bash
+
+# Script depends on feh/xdg-user-dirs/fdupes packages
+
 debug=0
 running="ONLINE" # running variable = ONLINE or LOCAL or FAV
-resolution="3840x2160" # Set YOUR OWN resolution here!
+resolution="3840x2160" # currently 4k. Set YOUR OWN resolution here!
 wptype="nature,water,wallpaper"
 url="https://source.unsplash.com/$resolution/?$wptype" # See unsplash.com for more ...
 timer=300  # Time in seconds to change the wallpaper
 wallp="$HOME/.wallpaper.jpg"
-storage="$HOME/Afbeeldingen/Wallpapers/$resolution"
+storage="$(xdg-user-dir PICTURES)/Wallpapers/$resolution"
 setwp="feh --bg-scale --no-fehbg $wallp"
 arg=$1
 
@@ -49,7 +52,7 @@ fi
 $setwp
 if [[ $arg -eq 1 ]]; then
     echo; echo "   New Wallpaper set "; echo
-    exit 1
+    exit 0
 fi
 }
 
@@ -90,7 +93,7 @@ echo "   1) directly change the wallpaper"
 echo "   2) Save current wallpaper to $storage/fav/"
 echo "   3) Delete this Ugly Wallpaper "
 echo
-exit 1
+exit 0
 fi
 
 if [[ $1 -eq 3 ]]; then
@@ -103,10 +106,10 @@ fi
 
 if [[ $1 -eq 2 && $running != "FAV" ]]; then
 savefav
-exit 1
+exit 0
 elif [[ $1 -eq 2 ]]; then
 echo; echo "   Your already Running Favorite Wallpapers "; echo
-exit 1
+exit 0
 fi
 echo "SESSION = " $DESKTOP_SESSION
 while [[ $DESKTOP_SESSION == compiz || $DESKTOP_SESSION == *"penbox"* ]] && [[ $1 -eq 0 ]]; do
@@ -114,5 +117,4 @@ setup
 sleep $timer
 done
 
-setup
 exit 0
