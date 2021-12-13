@@ -139,16 +139,17 @@ echo "echo " >> /target/home/user/final.sh; \
 echo "read -p -n 1 '[Y/N] :' cont" >> /target/home/user/final.sh; \
 echo "if [[ \$cont = 'y' ]]; then" >> /target/home/user/final.sh; \
 sed -i '/^deb cdrom/d' /target/etc/apt/sources.list; \
-echo "deb http://download.opensuse.org/repositories/home:/Head_on_a_Stick:/obmenu-generator/Debian_10/ /" > /target/etc/apt/sources.list.d/obmenu-generator.list; \
-echo "wget -nv https://download.opensuse.org/repositories/home:Head_on_a_Stick:obmenu-generator/Debian_10/Release.key -O Release.key" >> /target/home/user/final.sh; \
 # Set your mirror here 
 echo "deb http://ftp.nluug.nl/debian bullseye main contrib" >> /target/etc/apt/sources.list; \
 echo "sudo apt update && sudo apt upgrade" >> /target/home/user/final.sh; \
 echo "sudo apt install openbox obsession obconf lxpanel lxpolkit xcompmgr lxterminal thunar feh \
-ruby gcc make perl curl unifont libgtk3-perl gmrun alsa-utils alsamixergui polkit diodon geany xarchiver \
+ruby gcc make perl curl unifont libgtk3-perl gmrun alsa-utils alsamixergui xdotool diodon geany xarchiver \
 xscreensaver aptitude net-tools lightdm lightdm-gtk-greeter-settings lsb-release inxi xutils xdg-utils \
 rsync wget accountsservice xdg-user-dirs xfce4-notifyd baobab autofs x11-xserver-utils gthumb hexchat cpanminus \
 firefox-esr-l10n-nl linux-headers-\$(uname -r) -y" >> /target/home/user/final.sh; \
+echo 'echo "deb http://download.opensuse.org/repositories/home:/Head_on_a_Stick:/obmenu-generator/Debian_10/ /" > obmenu-generator.list' >> /target/home/user/final.sh; \
+echo "wget -nv https://download.opensuse.org/repositories/home:Head_on_a_Stick:obmenu-generator/Debian_10/Release.key -O Release.key" >> /target/home/user/final.sh; \
+echo "sudo mv ~/obmenu-generator.list /etc/apt/sources.list.d/" >> /target/home/user/final.sh; \
 echo "sudo apt-key add - < Release.key" >> /target/home/user/final.sh; \
 echo "rm Release.key" >> /target/home/user/final.sh; \
 #echo "sudo cpan install inc::latest" >> /target/home/user/bin/final.sh; \
