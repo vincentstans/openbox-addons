@@ -136,7 +136,7 @@ echo 'echo "    #####################################"' >> /target/home/user/fin
 echo 'echo "    # Continue Last Installation Steps  #"' >> /target/home/user/final.sh; \
 echo 'echo "    #####################################"' >> /target/home/user/final.sh; \
 echo "echo " >> /target/home/user/final.sh; \
-echo "read -p -n 1 '[Y/N] :' cont" >> /target/home/user/final.sh; \
+echo "read -n 1 -p '[Y/N] :' cont" >> /target/home/user/final.sh; \
 echo "if [[ \$cont = 'y' ]]; then" >> /target/home/user/final.sh; \
 sed -i '/^deb cdrom/d' /target/etc/apt/sources.list; \
 # Set your mirror here 
@@ -167,5 +167,7 @@ echo "if [[ -z \$DISPLAY ]] && [[ \$(tty) = /dev/tty1 ]]; then /home/user/final.
 chmod +x /target/home/user/final.sh; \
 chown -R 1000:1000 /target/home/user;
 
+#Load a script found in the same folder as bullseye.cfg.efi
+#d-i preseed/run string userinfo.sh
 # Avoid that last message about the install being complete.
 d-i finish-install/reboot_in_progress note
