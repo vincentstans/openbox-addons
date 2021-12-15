@@ -92,7 +92,14 @@ echo -e "\n   0) run the script in the background apply & at the end "
 echo "   1) directly change the wallpaper"
 echo "   2) Save current wallpaper to $storage/fav/"
 echo "   3) Delete this Ugly Wallpaper "
+echo "   4) Quit running the script "
 echo
+exit 0
+fi
+
+if [[ $1 -eq 4 ]]; then 
+notify-send -t 10000 -i image "Wallpaper.sh" "\n\n  QUIT Wallpaper changer  \n"
+ps ax | grep wallpaper.sh | grep -E [0-9] -m1 | cut -d' ' -f3 | xargs kill
 exit 0
 fi
 
