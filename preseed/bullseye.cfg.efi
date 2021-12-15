@@ -2,7 +2,7 @@
 #### EFI boot installation 12GB disk requires about 3GB complete
 #### boot param: auto=true priority=critical file=preseed.cfg.efi or url=domain.tld/preseed.cfg.efi
 #### Crypt setup password:r00tme123
-#### first login on tty1: user/user123
+#### first login on tty2: user/user123
 #### 
 ### Localization
 # Preseeding only locale sets language, country and locale currently set to Dutch / English.
@@ -112,13 +112,14 @@ popularity-contest popularity-contest/participate boolean false
 d-i grub-installer/only_debian boolean true
 d-i grub-installer/with_other_os boolean true
 d-i grub-installer/bootdev string /dev/sda
+### Use old netnames like eth0 wlan0 add these to your installer boot to prevent issues after install
 #d-i debian-installer/add-kernel-opts string net.ifnames=0 biosdevname=0
 d-i finish-install/keep-consoles boolean false
 # Late command building custom script to run on first login on tty1
 d-i preseed/late_command string \
 ### some examples 
 #echo "host.or.ip.addr:/srv/nfs/home/ /media/user/backup nfs user,auto 0 0" >> /target/etc/fstab; \
-##in-target mkdir -p /media/user/backup; in-target chown -R 1000:1000 /media/user; \
+#in-target mkdir -p /media/user/backup; in-target chown -R 1000:1000 /media/user; \
 echo "#!/bin/bash" > /target/home/user/final.sh; \
 echo "echo " >> /target/home/user/final.sh; \
 # New Password after first login uncomment below
@@ -163,7 +164,7 @@ echo "rm -f \$0 .bash_profile" >> /target/home/user/final.sh; \
 echo "else" >> /target/home/user/final.sh; \
 echo 'echo " DIY ! "' >> /target/home/user/final.sh; \
 echo "fi" >> /target/home/user/final.sh; \
-echo "if [[ -z \$DISPLAY ]] && [[ \$(tty) = /dev/tty1 ]]; then /home/user/final.sh; fi" > /target/home/user/.bash_profile; \
+echo "if [[ -z \$DISPLAY ]] && [[ \$(tty) = /dev/tty2 ]]; then /home/user/final.sh; fi" > /target/home/user/.bash_profile; \
 chmod +x /target/home/user/final.sh; \
 chown -R 1000:1000 /target/home/user;
 
