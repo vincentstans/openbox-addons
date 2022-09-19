@@ -1,0 +1,85 @@
+#!/bin/bash
+set -e
+HOSTFILE() {
+filein="$1"
+filesize="$2"
+ip="$3"
+echo "Calculating MD5. Please Wait..."
+md5=($(md5sum $filein))
+if [ -z $ip ]; then
+ip=$(ip route get 1.1.1.1 | cut -d' ' -f7)
+fi
+echo -en "\n\tHosting File:\t$filein\n\tFile Size:\t$filesize\n\tMD5:\t\t${md5[0]}\n"
+echo -en "\n\tRun this on the client\n\tncfile -s $ip\n\n"
+echo $filesize ${md5[@]} | nc -4nlw 1 $ip 4041 &
+pv -s $filesize $filein | nc -4lnNvw 10 $ip 4040
+exit 0
+}
+
+GETFILE() {
+host="$1"
+source=($(nc -4nw 1 $host 4041))
+filesize=${source[0]}
+md5=${source[1]}
+fileout=${source[2]}
+echo -en "\n\tRecieving File:\t$fileout\n\tFile Size:\t$filesize\n\tMD5:\t\t${md5[0]}\n\n"
+nc -Nw 10 $host 4040 |pv -s $filesize > $fileout
+echo "Calculating MD5. Please Wait..."
+thismd5=($(md5sum $fileout))
+if [[ ${thismd5::32} = $md5 ]]; then
+echo "MD5 Match"
+else
+echo "MD5 Mis-Matched"
+fi
+exit 0
+}
+
+SHOWHELP() {
+	echo -en "\n\t $0 [options] file"
+	echo -en "\n"
+	echo -en "\n\t -s --server\t- [HOST IP/NAME]"
+	echo -en "\n\t -f --file\t- [Hosted File]"
+	echo -en "\n\t -h --help\t- Show this help menu "
+	echo -en "\n\n"
+	echo -en "\tSample Hosting a file:\n\tncfile -f [FILE.NAME] -s [Specified IP]\n"
+	echo -en "\n\tSample Recieving a file:\n\tncfile -s [HOST]\n\n"
+	exit 0
+}
+
+selection() {
+if [ ! -z $name ]; then
+size=$(ls -la $name | cut -d' ' -f5)
+#echo Host $name $size
+HOSTFILE $name $size $hostip
+else
+#echo Get $hostip $name
+GETFILE $hostip
+fi
+}
+
+if [ -z $1 ]; then
+SHOWHELP
+fi
+
+while [[ ! -z "$1" ]]; do
+	case "$1" in
+		-f|--file)
+		name="$2"
+		shift
+		shift
+		;;
+		-h|--help)
+		shift
+		shift
+		SHOWHELP
+		;;
+		-s|--server)
+		hostip="$2"
+		shift
+		shift
+		;;
+	esac
+done
+selection
+
+echo "End of Script. :)"
