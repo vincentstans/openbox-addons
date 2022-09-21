@@ -1,18 +1,20 @@
 #!/bin/bash
-
-# Script depends on feh/xdg-user-dirs/fdupes packages
-
 debug=0
-running="ONLINE" # running variable = ONLINE or LOCAL or FAV
-resolution="3840x2160" # currently 4k. Set YOUR OWN resolution here!
-wptype="nature,water,wallpaper"
+running="LOCAL" # running variable = ONLINE or LOCAL or FAV
+resolution="3840x2160" # Set YOUR OWN resolution here!
+wptype="nature,water,wallpaper,experimental,textures-patterns"
 url="https://source.unsplash.com/$resolution/?$wptype" # See unsplash.com for more ...
+if [[ $debug == 1 ]]; then timer=20; dbtime=15000; else
 timer=300  # Time in seconds to change the wallpaper
+fi
 wallp="$HOME/.wallpaper.jpg"
+if ! [[ $running == "FAV" ]]; then
 storage="$(xdg-user-dir PICTURES)/Wallpapers/$resolution"
+else
+storage="$(xdg-user-dir PICTURES)/Wallpapers/$resolution/fav"
+fi
 setwp="feh --bg-scale --no-fehbg $wallp"
 arg=$1
-
 ####################################
 # No need to edit bewlow this line #
 ####################################
@@ -20,56 +22,64 @@ arg=$1
 setup_r() {
 timesec=$(date +%s)
 newfile="$storage/$timesec.jpg"
+if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 1" "   Downloading from: $url"; fi
 wget -q -O $newfile $url
-if [ $debug -eq "1" ]; then echo; echo "   Saved file as: $newfile"; fi
+sleep 1
+if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 2" "   Saved file as: $newfile"; fi
+ln -s $newfile $wallp
 }
 
 setup_l() {
 flist=($storage/*.jpg)
 randwp=${flist[$RANDOM % ${#flist[@]}]}
-if [ $debug -eq "1" ]; then echo; echo "   There are ${#flist[@]} files in $storage"; echo "   Selected a random file: $randwp"; echo ; fi
+if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 3" "   There are ${#flist[@]} files in $storage \n\n  Selected a random file: $randwp"; fi
+ln -s $randwp $wallp
 }
 
 setup() {
-if [ -f "$wallp" ]; then
-if [ $debug -eq "1" ]; then echo; echo "    Remove Symbolic link $wallp"; fi
-rm $wallp
+if [ -e $wallp ]; then
+	if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 4" "    Remove Symbolic link $wallp"; fi
+	rm $wallp
+fi
+if [ $running == "ONLINE" ]; then
+	if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 5" "    Scanning for Duplicates"; fdupes -f -d -I $storage ; else fdupes -f -d -q -I $storage > /dev/null; fi
 fi
 if [ $running == "LOCAL" ]; then
-    if [ $debug -eq "1" ]; then echo; echo "   LOCAL Wallpaper Active"; fi
+    if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 6" "   LOCAL Wallpaper Active"; fi
     setup_l
-    ln -s $randwp $wallp
-  elif [ $running == "ONLINE" ]; then
-    if [ $debug -eq "1" ]; then echo; echo "   ONLINE Wallpaper Active"; fi
+
+ elif [ $running == "ONLINE" ]; then
+    if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 7" "   ONLINE Wallpaper Active"; fi
     setup_r
-    ln -s $newfile $wallp
   else
-    storage=$storage/fav
     setup_l
-    if [ $debug -eq "1" ]; then echo; echo "   Showing Favorites Wallpaper from: $randwp"; fi
+    if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 8" "   Showing Favorites Wallpaper from: $randwp"; fi
+    if [[ -e $wallp ]]; then
+	rm $wallp
+    fi
     ln -s $randwp $wallp
 fi
 $setwp
 if [[ $arg -eq 1 ]]; then
-    echo; echo "   New Wallpaper set "; echo
+    if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 9" "   New Wallpaper set "; fi
     exit 0
+       if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 10" "  You Should NOT get this Message ! "; fi
 fi
 }
 
 savefav() {
 realwp=$(realpath $wallp)
-favfile=$(realpath $wallp | awk -F/ '{ print $7 }')
+favfile=$(realpath $wallp | rev | cut -d'/' -f1 | rev)
 if [ ! -f "$storage/fav/$favfile" ]; then
-echo; echo "    Saving $realwp"; echo "    to"; echo "    $storage/fav/$favfile"
+   if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 11" "   New Wallpaper set \n  Saving \n    $realwp \n  to \n  $storage/fav/$favfile"; fi
 cp $realwp $storage/fav/
 else
-echo; echo "    Reeds in je favorieten "
+   if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 12" "    Reeds in je favorieten "; fi
 fi
-echo
 }
 
-if [ ! -d $storage/fav ]; then
-echo "    $storage/fav doesn't exist creating it"
+if [ ! -d $(xdg-user-dir PICTURES)/Wallpapers/$resolution/fav ]; then
+   if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 13" "    $storage/fav doesn't exist creating it"; fi
 mkdir -p $storage/fav
 running="ONLINE"
 setup_r
@@ -92,36 +102,38 @@ echo -e "\n   0) run the script in the background apply & at the end "
 echo "   1) directly change the wallpaper"
 echo "   2) Save current wallpaper to $storage/fav/"
 echo "   3) Delete this Ugly Wallpaper "
-echo "   4) Quit running the script "
 echo
-exit 0
+exit 1
 fi
 
-if [[ $1 -eq 4 ]]; then 
+if [[ $1 -eq 4 ]]; then
 notify-send -t 10000 -i image "Wallpaper.sh" "\n\n  QUIT Wallpaper changer  \n"
-ps ax | grep wallpaper.sh | grep -E [0-9] -m1 | cut -d' ' -f3 | xargs kill
+ps ax | grep wallpaper.sh | grep -E [0-9] -m1 | awk '{print $1}' | xargs kill
 exit 0
 fi
 
 if [[ $1 -eq 3 ]]; then
 realwp=$(realpath $wallp)
-if [ $debug -eq "1" ]; then echo; echo "    Scanning for Duplicates"; fdupes -f -d -I $storage; echo ; else fdupes -f -d -q -I $storage; fi
 rm $realwp
 rm $wallp
-echo; echo "   Deleted that ugly Wallpaper: $realwp"; echo
+   if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 14" "   Deleted that ugly Wallpaper: $realwp"; fi
 fi
 
 if [[ $1 -eq 2 && $running != "FAV" ]]; then
+if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 15" "   Going to FAV"; fi
 savefav
+
 exit 0
 elif [[ $1 -eq 2 ]]; then
-echo; echo "   Your already Running Favorite Wallpapers "; echo
+if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 16" "   Your already Running Favorite Wallpapers "; fi
 exit 0
 fi
-echo "SESSION = " $DESKTOP_SESSION
+if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 17" "SESSION = $DESKTOP_SESSION "; fi
 while [[ $DESKTOP_SESSION == compiz || $DESKTOP_SESSION == *"penbox"* ]] && [[ $1 -eq 0 ]]; do
 setup
+if [ $debug -eq "1" ]; then notify-send -t $dbtime -i image "Wallpaper -=DEBUG=- 18" "    Sleeping $timer"; fi
 sleep $timer
 done
 
+setup
 exit 0
