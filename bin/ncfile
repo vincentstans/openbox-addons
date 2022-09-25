@@ -1,81 +1,160 @@
 #!/bin/bash
-set -e
+#set -e
+arg=4lnN
+SIZE() {
+	size=$1
+	if [[ $size -gt 1073741824 ]]; then
+		expr=$(($size/1024/1024))
+	    if [ ${#expr} -eq 7 ]; then
+			filesize=$(echo ${expr::4},${expr:4:2}) 
+	     elif [ ${#expr} -eq 6 ]; then
+			filesize=$(echo ${expr::3},${expr:3:2})
+	     elif [ ${#expr} -eq 5 ]; then
+			filesize=$(echo ${expr::2},${expr:2:2})
+	     else
+			filesize=$(echo ${expr::1},${expr:1:2})
+	    fi
+		m=GB
+	 elif [[ $size -gt 1048576 ]]; then
+	    expr=$(($size/1024))
+	    if [ ${#expr} -eq 7 ]; then
+			filesize=$(echo ${expr::4},${expr:4:2})
+	     elif [ ${#expr} -eq 6 ]; then
+			filesize=$(echo ${expr::3},${expr:3:2})
+	     elif [ ${#expr} -eq 5 ]; then
+			filesize=$(echo ${expr::2},${expr:2:2})
+	     else
+			filesize=$(echo ${expr::1},${expr:1:2})
+	    fi
+	    m=MB
+	 else
+		filesize=$size
+		m=bytes
+	fi
+}
+
 HOSTFILE() {
-filein="$1"
-filesize="$2"
-ip="$3"
-echo "Calculating MD5. Please Wait..."
-md5=($(md5sum $filein))
-if [ -z $ip ]; then
-ip=$(ip route get 1.1.1.1 | cut -d' ' -f7)
-fi
-echo -en "\n\tHosting File:\t$filein\n\tFile Size:\t$filesize\n\tMD5:\t\t${md5[0]}\n"
-echo -en "\n\tRun this on the client\n\tncfile -s $ip\n\n"
-echo $filesize ${md5[@]} | nc -4nlw 1 $ip 4041 &
-pv -s $filesize $filein | nc -4lnNvw 10 $ip 4040
-exit 0
+	filein="$1"
+	bytes=$2
+	SIZE $bytes
+	ip="$3"
+	ips=$(ip route get 1.1.1.1 | cut -d' ' -f7)
+	echo -n "Calculating MD5. Please Wait..."
+	md5sum "$filein" > /tmp/md5 &
+	pid=$!
+	trap "kill $pid 2> /dev/null" EXIT
+	while kill -0 $pid 2> /dev/null; do
+		echo -n "."
+		sleep 1
+	done
+	trap - EXIT
+	while read line; do
+		md5=($line)
+	done < /tmp/md5
+	rm /tmp/md5
+	if [ -z $ip ]; then
+		ip=$ips
+	fi
+	echo
+	echo -en "\n\tHosting File:\t$filein\n\tFile Size:\t$bytes\t$filesize $m\n\tMD5:\t\t${md5[0]}\n"
+	echo -en "\n\tRun this on the client\n\tncfile -s $ips\n\n"
+	echo -en "$bytes\n${md5[0]}\n$filein"| nc -4lnw 1 $ip 4041 &
+	pv -W -s $bytes "$filein" | nc -$arg -w 5 $ip 4040
+	exit 0
 }
 
 GETFILE() {
-host="$1"
-source=($(nc -4nw 1 $host 4041))
-filesize=${source[0]}
-md5=${source[1]}
-fileout=${source[2]}
-echo -en "\n\tRecieving File:\t$fileout\n\tFile Size:\t$filesize\n\tMD5:\t\t${md5[0]}\n\n"
-nc -Nw 10 $host 4040 |pv -s $filesize > $fileout
-echo "Calculating MD5. Please Wait..."
-thismd5=($(md5sum $fileout))
-if [[ ${thismd5::32} = $md5 ]]; then
-echo "MD5 Match"
-else
-echo "MD5 Mis-Matched"
-fi
-exit 0
+	SAVEIFS="$IFS"
+	IFS=$(echo -en "\n\b")
+	host="$1"
+	if [[ -z $host ]]; then
+		exit 0
+	fi
+	source=($(nc -4nw 1 $host 4041))
+	if [[ ${#source} -lt 1 ]]; then
+		echo "Fault Connecting to Server $host 4041"
+		exit 1
+	fi
+	bytes=${source[0]}
+	md5=${source[1]}
+	fileout=${source[2]}
+	SIZE $bytes
+	echo -en "\n\tRecieving File:\t$fileout\n\tFile Size:\t$bytes\t$filesize $m\n\tMD5:\t\t${md5[0]}\n\n"
+	nc -Nw 5 $host 4040 | pv -s $bytes > "$fileout"
+	echo -n "Calculating MD5. Please Wait..."
+	md5sum "$fileout" > /tmp/md5 &
+	pid=$!
+	trap "kill $pid 2> /dev/null" EXIT
+	while kill -0 $pid 2> /dev/null; do
+		echo -n "."
+		sleep 1
+	done
+	trap - EXIT
+	while read line; do
+		thismd5=($line)
+	done < /tmp/md5
+	rm /tmp/md5
+
+	if [[ ${thismd5::32} = $md5 ]]; then
+		echo "MD5 Match"
+	 else
+		echo "MD5 Mis-Matched"
+	fi
+	IFS="$SAVEIFS"
+	exit 0
 }
 
 SHOWHELP() {
 	echo -en "\n\t $0 [options] file"
 	echo -en "\n"
-	echo -en "\n\t -s --server\t- [HOST IP/NAME]"
+	echo -en "\n\t -s --server\t- [HOST IP]"
 	echo -en "\n\t -f --file\t- [Hosted File]"
+	echo -en "\n\t -v --verbose\t- Enable nc verbose on HOST"
 	echo -en "\n\t -h --help\t- Show this help menu "
 	echo -en "\n\n"
 	echo -en "\tSample Hosting a file:\n\tncfile -f [FILE.NAME] -s [Specified IP]\n"
-	echo -en "\n\tSample Recieving a file:\n\tncfile -s [HOST]\n\n"
-	exit 0
+	echo -en "\tncfile [FILE.NAME]\n"
+	echo -en "\n\tSample Recieving a file:\n\tncfile -s [HOST IP]\n\n"
 }
 
 selection() {
-if [ ! -z $name ]; then
-size=$(ls -la $name | cut -d' ' -f5)
-#echo Host $name $size
-HOSTFILE $name $size $hostip
-else
-#echo Get $hostip $name
-GETFILE $hostip
-fi
+	if [[ ! -z $name ]]; then
+		if [[ -f $name ]]; then
+			size=$(ls -la "$name" | cut -d' ' -f5)
+		 else
+			echo "File not Found"
+			exit 1
+		fi
+		HOSTFILE "$name" $size $hostip
+	 else
+		GETFILE $hostip
+	fi
 }
 
 if [ -z $1 ]; then
-SHOWHELP
+	SHOWHELP
 fi
 
 while [[ ! -z "$1" ]]; do
 	case "$1" in
 		-f|--file)
 		name="$2"
-		shift
-		shift
+		shift 2
 		;;
 		-h|--help)
-		shift
 		shift
 		SHOWHELP
 		;;
 		-s|--server)
 		hostip="$2"
+		shift 2
+		;;
+		-v|--verbose)
+		arg+=v
 		shift
+		;;
+		*)
+		name="$1"
 		shift
 		;;
 	esac
@@ -83,3 +162,4 @@ done
 selection
 
 echo "End of Script. :)"
+exit 0
