@@ -1,0 +1,55 @@
+# Bash Text Color help
+# Escape sequence '\033[' '\e[' '\x1b['
+readonly ESCC='\033['
+
+# Text Color options
+readonly NC="${ESCC}0m"                  # no color
+readonly BOLD="${ESCC}1m"             # Bold
+readonly DARK="${ESCC}2m"             # Darkend
+readonly ITALIC="${ESCC}3m"           # Italic
+readonly UNDERLINE="${ESCC}4m" # Underlined
+readonly BLINK="${ESCC}5m"            # Blink slow 
+readonly BLINK1="${ESCC}6m"          # Blink fast
+readonly INVERT="${ESCC}7m"         # Inverted
+readonly HIDDEN="${ESCC}8m"        # Hidden
+readonly STRIKED="${ESCC}9m"       # Strike trough
+
+# Normal Colors
+readonly BLACK="${ESCC}30m"
+readonly RED="${ESCC}31m"
+readonly GREEN="${ESCC}32m"
+readonly YELLOW="${ESCC}33m"
+readonly BLUE="${ESCC}34m"
+readonly PURPLE="${ESCC}35m"
+readonly CYAN="${ESCC}36m"
+readonly WHITE="${ESCC}37m"
+
+# Background Colors
+readonly BGRED="${ESCC}41m"
+readonly BGGREEN="${ESCC}42m"
+readonly BGYELLOW="${ESCC}43m"
+readonly BGBLUE="${ESCC}44m"
+readonly BGPURPLE="${ESCC}45m"
+readonly BGCYAN="${ESCC}46m"
+readonly BGWHITE="${ESCC}47m"
+
+# High numbered colors
+readonly GRAY="${ESCC}90m"
+readonly HGRAY="${ESCC}90m"
+readonly HRED="${ESCC}91m"
+readonly HGREEN="${ESCC}92m"
+readonly HYELLOW="${ESCC}93m"
+readonly HBLUE="${ESCC}94m"
+readonly HPURPLE="${ESCC}95m"
+readonly HCYAN="${ESCC}96m"
+
+# High numbered background colors
+readonly HBGGRAY="${ESCC}100m"
+readonly HBGRED="${ESCC}101m"
+readonly HBGGREEN="${ESCC}102m"
+readonly HBGYELLOW="${ESCC}103m"
+readonly HBGBLUE="${ESCC}104m"
+readonly HBGPURPLE="${ESCC}105m"
+readonly HBGCYAN="${ESCC}106m"
+readonly HBGWHITE="${ESC}107m"
+
