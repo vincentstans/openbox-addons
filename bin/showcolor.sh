@@ -1,4 +1,3 @@
-source copyright.inc
 source colors.var
 
 # Colors array
