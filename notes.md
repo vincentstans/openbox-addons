@@ -9,6 +9,7 @@ clevis luks bind -d /dev/sdXn sss '{"t":2,"pins":{"tang":[{"url":"http://192.168
 
 # Encrypt with 1 server can add multiple servers just 1 needs to be online requires 1 luks slot each
 clevis luks bind -d /dev/sda5 tang '{"url":"http://192.168.145.10"}'
+
 clevis luks bind -d /dev/sda5 tang '{"url":"http://www.public.tld"}'
 
 # Combine above 2 commands like so requires 1 luke slot
