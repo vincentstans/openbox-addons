@@ -1,15 +1,13 @@
 # Tang server port change
-mkdir -p /etc/systemd/system/tangd.socket.d/
-
-echo -ne "[Socket]\nListenStream=\nListenStream=8080\n" > /etc/systemd/system/tangd.socket.d/port.conf
+mkdir -p /etc/systemd/system/tangd.socket.d/ \
+echo -ne "[Socket]\nListenStream=\nListenStream=8080\n" > /etc/systemd/system/tangd.socket.d/port.conf \
 systemctl daemon-reload
 
 # Encrypt with 2 tang servers both needed to decrypt
 clevis luks bind -d /dev/sdXn sss '{"t":2,"pins":{"tang":[{"url":"http://192.168.145.10"},{"url":"http://www.public.tld"}]}}'
 
 # Encrypt with 1 server can add multiple servers just 1 needs to be online requires 1 luks slot each
-clevis luks bind -d /dev/sda5 tang '{"url":"http://192.168.145.10"}'
-
+clevis luks bind -d /dev/sda5 tang '{"url":"http://192.168.145.10"}' \
 clevis luks bind -d /dev/sda5 tang '{"url":"http://www.public.tld"}'
 
 # Combine above 2 commands like so requires 1 luke slot
