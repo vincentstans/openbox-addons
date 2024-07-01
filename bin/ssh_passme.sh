@@ -25,15 +25,25 @@ cat $HOME/.ssh/id_rsa.pub | ssh ${ips[$i]} 'cat >> .ssh/authorized_keys'
 done
 }
 
-read -p "   SSH username: " user
+read -p "   SSH username: [ $(whoami) ]: " username
+user=${username:-$(whoami)}
 
 if [ -z $ip ]; then
 read -p "   Enter Server IP: " ip
 else
-echo "   ip is: $ip"
+echo "   ip/host is: $ip"
 fi
 
-echo "   Copy ID to Server $ip"
-ssh-copy-id -i ~/.ssh/id_rsa.pub $user@$ip
+read -p "   Key file: " kf
+keyfile="/home/$(whoami)/.ssh/"${kf:-id_rsa.pub}
+
+echo "   Copy ${keyfile} to Server $ip"
+ssh-copy-id -i ${keyfile} $user@$ip
+
+if [[ ! $? == "0" ]]; then
+echo " Failed copying files to $ip "
+exit 1
+fi
 
 echo "   Finished"
+
